@@ -14,14 +14,48 @@ let currentEditId = null;
 // DOM Elements
 const grid = document.getElementById('collection-grid');
 const emptyState = document.getElementById('empty-state');
-const modal = document.getElementById('watch-modal');
+const watchModal = document.getElementById('watch-modal');
+const settingsModal = document.getElementById('settings-modal');
 const form = document.getElementById('watch-form');
 const deleteBtn = document.getElementById('btn-delete');
+const themeSelect = document.getElementById('theme-select');
+
+// Theme Management
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'system';
+    themeSelect.value = savedTheme;
+    applyTheme(savedTheme);
+    
+    // Listen for OS system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (localStorage.getItem('theme') === 'system') {
+            applyTheme('system');
+        }
+    });
+}
+
+function changeTheme(themeValue) {
+    localStorage.setItem('theme', themeValue);
+    applyTheme(themeValue);
+}
+
+function applyTheme(themeValue) {
+    const isDark = themeValue === 'dark' || 
+                  (themeValue === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    
+    if (isDark) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+}
 
 // Initialization
 function init() {
+    initTheme();
     renderDashboard();
     renderGrid();
+    feather.replace(); // Initialize feather icons on load
 }
 
 // Save to LocalStorage
@@ -52,44 +86,46 @@ function renderGrid() {
     
     if (watches.length === 0) {
         emptyState.classList.remove('hidden');
-        return;
     } else {
         emptyState.classList.add('hidden');
     }
 
-    // Sort watches: Most recently added first (by ID)
+    // Sort watches: Most recently added first
     const sortedWatches = [...watches].sort((a, b) => b.id - a.id);
 
     sortedWatches.forEach(watch => {
         const card = document.createElement('div');
-        card.className = 'bg-carbon-surface border border-carbon-border p-5 shadow-sm flex flex-col h-full transition-shadow hover:shadow-md';
+        card.className = 'bg-carbon-surface dark:bg-carbon-darkSurface border border-carbon-border dark:border-carbon-darkBorder p-5 flex flex-col h-full transition-colors duration-200 hover:shadow-md';
         
         card.innerHTML = `
             <div class="mb-4">
-                <span class="text-xs font-semibold uppercase tracking-wider text-carbon-textSecondary">${watch.brand}</span>
-                <h3 class="text-xl font-medium text-carbon-text mt-1">${watch.model}</h3>
+                <span class="text-xs font-semibold uppercase tracking-wider text-carbon-textSecondary dark:text-carbon-darkTextSecondary">${watch.brand}</span>
+                <h3 class="text-xl font-medium mt-1">${watch.model}</h3>
             </div>
             
             <div class="my-4 flex-grow">
                 <div class="flex items-end gap-2 mb-2">
-                    <span class="text-sm text-carbon-textSecondary">Wrist Time:</span>
-                    <span class="text-3xl font-light leading-none text-carbon-text">${watch.wristTime}</span>
+                    <span class="text-sm text-carbon-textSecondary dark:text-carbon-darkTextSecondary">Wrist Time:</span>
+                    <span class="text-3xl font-light leading-none">${watch.wristTime}</span>
                 </div>
-                ${watch.notes ? `<p class="text-sm text-carbon-textSecondary mt-3 line-clamp-2 border-l-2 border-carbon-border pl-2">${watch.notes}</p>` : ''}
+                ${watch.notes ? `<p class="text-sm text-carbon-textSecondary dark:text-carbon-darkTextSecondary mt-3 line-clamp-2 border-l-2 border-carbon-border dark:border-carbon-darkBorder pl-2">${watch.notes}</p>` : ''}
             </div>
             
-            <div class="mt-auto pt-4 border-t border-carbon-border flex gap-3">
-                <button onclick="addWristTime(${watch.id})" class="flex-1 bg-carbon-blue text-white px-3 py-2 text-sm font-semibold hover:bg-carbon-blueHover transition-colors flex items-center justify-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    +1 Wrist Time
+            <div class="mt-auto pt-4 border-t border-carbon-border dark:border-carbon-darkBorder flex gap-3">
+                <button onclick="addWristTime(${watch.id})" class="flex-1 bg-carbon-blue text-white px-3 py-2 text-sm font-semibold hover:bg-carbon-blueHover transition-colors flex items-center justify-center gap-2">
+                    <i data-feather="plus-circle" class="w-4 h-4"></i>
+                    +1 Wear
                 </button>
-                <button onclick="openModal(${watch.id})" class="bg-transparent border border-carbon-dark text-carbon-dark px-3 py-2 text-sm font-semibold hover:bg-gray-100 transition-colors">
-                    Edit/Notes
+                <button onclick="openWatchModal(${watch.id})" class="bg-transparent border border-carbon-text dark:border-carbon-darkText px-3 py-2 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-carbon-darkBorder transition-colors flex items-center justify-center gap-2" aria-label="Edit Watch">
+                    <i data-feather="edit-2" class="w-4 h-4"></i>
                 </button>
             </div>
         `;
         grid.appendChild(card);
     });
+
+    // Re-initialize feather icons for newly added HTML
+    feather.replace();
 }
 
 // Add Wrist Time Action
@@ -102,7 +138,7 @@ function addWristTime(id) {
 }
 
 // Modal Management
-function openModal(id = null) {
+function openWatchModal(id = null) {
     currentEditId = id;
     form.reset();
     
@@ -120,12 +156,17 @@ function openModal(id = null) {
         deleteBtn.classList.add('hidden');
     }
     
-    modal.classList.remove('hidden');
+    watchModal.classList.remove('hidden');
     document.getElementById('brand').focus();
 }
 
-function closeModal() {
-    modal.classList.add('hidden');
+function openSettings() {
+    settingsModal.classList.remove('hidden');
+}
+
+function closeModals() {
+    watchModal.classList.add('hidden');
+    settingsModal.classList.add('hidden');
     currentEditId = null;
 }
 
@@ -159,7 +200,7 @@ function saveWatch() {
     }
 
     persistData();
-    closeModal();
+    closeModals();
 }
 
 // Delete Watch
@@ -167,7 +208,7 @@ function deleteWatch() {
     if (confirm('Are you sure you want to remove this timepiece from your collection?')) {
         watches = watches.filter(w => w.id !== currentEditId);
         persistData();
-        closeModal();
+        closeModals();
     }
 }
 

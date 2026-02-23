@@ -1,10 +1,11 @@
-const CACHE_NAME = 'timepiece-tracker-v1';
+const CACHE_NAME = 'timepiece-tracker-v2';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './app.js',
     './manifest.json',
     'https://cdn.tailwindcss.com',
+    'https://unpkg.com/feather-icons',
     'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap'
 ];
 
@@ -20,7 +21,7 @@ self.addEventListener('install', event => {
     self.skipWaiting();
 });
 
-// Activate Event - Cleans up old caches
+// Activate Event - Cleans up old caches if version changes
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -55,13 +56,14 @@ self.addEventListener('fetch', event => {
                             return networkResponse;
                         }
 
-                        // Clone response to put in cache and also return to browser
                         let responseToCache = networkResponse.clone();
 
                         caches.open(CACHE_NAME)
                             .then(function(cache) {
-                                // Only cache same-origin requests dynamically or whitelisted CDNs
-                                if (event.request.url.startsWith(self.location.origin) || event.request.url.includes('fonts.')) {
+                                // Only cache same-origin requests or allowed CDNs
+                                if (event.request.url.startsWith(self.location.origin) || 
+                                    event.request.url.includes('fonts.') || 
+                                    event.request.url.includes('unpkg.com')) {
                                     cache.put(event.request, responseToCache);
                                 }
                             });

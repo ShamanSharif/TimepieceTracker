@@ -6,17 +6,31 @@
     <title>Timepiece Collection Tracker</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#161616">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌚</text></svg>">
+    
+    <!-- URL-encoded Feather 'watch' icon for Favicon -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%230f62fe' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='7'%3E%3C/circle%3E%3Cpolyline points='12 9 12 12 13.5 13.5'%3E%3C/polyline%3E%3Cpath d='M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83'%3E%3C/path%3E%3C/svg%3E">
     
     <!-- IBM Plex Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS (Configured for IBM Carbon Design System) -->
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- Pre-load Theme to prevent flicker -->
+    <script>
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        if (savedTheme === 'dark' || (savedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+
+    <!-- Tailwind CSS (Carbon Design System + Dark Mode) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -24,15 +38,23 @@
                     },
                     colors: {
                         carbon: {
+                            // Light Mode
                             bg: '#f4f4f4',        // Gray 10
                             surface: '#ffffff',   // White
                             border: '#e0e0e0',    // Gray 20
                             text: '#161616',      // Gray 100
                             textSecondary: '#525252', // Gray 70
-                            blue: '#0f62fe',      // Blue 60 (Primary)
+                            
+                            // Dark Mode
+                            darkBg: '#161616',        // Gray 100
+                            darkSurface: '#262626',   // Gray 90
+                            darkBorder: '#393939',    // Gray 80
+                            darkText: '#f4f4f4',      // Gray 10
+                            darkTextSecondary: '#a8a8a8', // Gray 40
+                            
+                            // Shared Constants
+                            blue: '#0f62fe',      // Blue 60
                             blueHover: '#0353e9', // Blue 70
-                            dark: '#161616',      // Gray 100
-                            darkHover: '#393939', // Gray 80
                             danger: '#da1e28'     // Red 60
                         }
                     }
@@ -42,26 +64,30 @@
     </script>
     <style>
         /* Custom Carbon overrides */
-        body { background-color: #f4f4f4; color: #161616; -webkit-font-smoothing: antialiased; }
+        body { -webkit-font-smoothing: antialiased; }
         .carbon-input {
-            background-color: #f4f4f4;
             border-bottom: 1px solid #8d8d8d;
             transition: border-color 0.15s, background-color 0.15s;
         }
         .carbon-input:focus {
             outline: none;
             border-bottom: 2px solid #0f62fe;
-            background-color: #e8e8e8;
         }
         .hide-scroll::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="font-sans min-h-screen flex flex-col">
+<body class="font-sans min-h-screen flex flex-col bg-carbon-bg dark:bg-carbon-darkBg text-carbon-text dark:text-carbon-darkText transition-colors duration-200">
 
     <!-- Header -->
-    <header class="bg-carbon-dark text-white p-4 shadow-md">
+    <header class="bg-[#161616] dark:bg-[#000000] text-white p-4 shadow-md border-b border-transparent dark:border-carbon-darkBorder transition-colors duration-200">
         <div class="max-w-6xl mx-auto flex items-center justify-between">
-            <h1 class="text-xl font-semibold tracking-wide">Timepiece Tracker</h1>
+            <div class="flex items-center gap-2">
+                <i data-feather="watch" class="text-carbon-blue"></i>
+                <h1 class="text-xl font-semibold tracking-wide">Timepiece Tracker</h1>
+            </div>
+            <button onclick="openSettings()" class="hover:text-carbon-blue transition-colors focus:outline-none" aria-label="Settings">
+                <i data-feather="settings"></i>
+            </button>
         </div>
     </header>
 
@@ -70,80 +96,106 @@
         
         <!-- Dashboard Stats -->
         <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="bg-carbon-surface border border-carbon-border p-5 rounded-none shadow-sm flex flex-col">
-                <span class="text-sm text-carbon-textSecondary mb-1 block">Total Watches</span>
-                <span class="text-3xl font-light text-carbon-text" id="stat-total-watches">0</span>
+            <div class="bg-carbon-surface dark:bg-carbon-darkSurface border border-carbon-border dark:border-carbon-darkBorder p-5 flex flex-col transition-colors duration-200">
+                <span class="text-sm text-carbon-textSecondary dark:text-carbon-darkTextSecondary mb-1 block">Total Watches</span>
+                <span class="text-3xl font-light" id="stat-total-watches">0</span>
             </div>
-            <div class="bg-carbon-surface border border-carbon-border p-5 rounded-none shadow-sm flex flex-col">
-                <span class="text-sm text-carbon-textSecondary mb-1 block">Total Wrist Time</span>
-                <span class="text-3xl font-light text-carbon-text" id="stat-total-wrist-time">0</span>
+            <div class="bg-carbon-surface dark:bg-carbon-darkSurface border border-carbon-border dark:border-carbon-darkBorder p-5 flex flex-col transition-colors duration-200">
+                <span class="text-sm text-carbon-textSecondary dark:text-carbon-darkTextSecondary mb-1 block">Total Wrist Time</span>
+                <span class="text-3xl font-light" id="stat-total-wrist-time">0</span>
             </div>
-            <div class="bg-carbon-surface border border-carbon-border p-5 rounded-none shadow-sm flex flex-col">
-                <span class="text-sm text-carbon-textSecondary mb-1 block">Most Worn</span>
-                <span class="text-xl font-medium text-carbon-text truncate mt-1" id="stat-most-worn">N/A</span>
+            <div class="bg-carbon-surface dark:bg-carbon-darkSurface border border-carbon-border dark:border-carbon-darkBorder p-5 flex flex-col transition-colors duration-200">
+                <span class="text-sm text-carbon-textSecondary dark:text-carbon-darkTextSecondary mb-1 block">Most Worn</span>
+                <span class="text-xl font-medium truncate mt-1" id="stat-most-worn">N/A</span>
             </div>
         </section>
 
         <!-- Collection Grid -->
         <section>
-            <h2 class="text-lg font-medium text-carbon-text mb-4">Your Collection</h2>
+            <h2 class="text-lg font-medium mb-4">Your Collection</h2>
             <div id="collection-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Watch Cards injected by JS -->
             </div>
-            <div id="empty-state" class="hidden text-center py-12 bg-carbon-surface border border-carbon-border">
-                <p class="text-carbon-textSecondary">Your collection is empty. Click the + button to add your first timepiece.</p>
+            <div id="empty-state" class="hidden text-center py-12 bg-carbon-surface dark:bg-carbon-darkSurface border border-carbon-border dark:border-carbon-darkBorder transition-colors duration-200">
+                <i data-feather="watch" class="mx-auto text-carbon-textSecondary dark:text-carbon-darkTextSecondary w-12 h-12 mb-4 opacity-50"></i>
+                <p class="text-carbon-textSecondary dark:text-carbon-darkTextSecondary">Your collection is empty. Click the + button to add your first timepiece.</p>
             </div>
         </section>
 
     </main>
 
     <!-- Floating Action Button (FAB) -->
-    <button onclick="openModal()" class="fixed bottom-8 right-8 w-14 h-14 bg-carbon-blue text-white rounded-none shadow-lg hover:bg-carbon-blueHover flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-carbon-blue z-40" aria-label="Add new watch">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="square" stroke-linejoin="miter" d="M12 4v16m8-8H4" />
-        </svg>
+    <button onclick="openWatchModal()" class="fixed bottom-8 right-8 w-14 h-14 bg-carbon-blue text-white shadow-lg hover:bg-carbon-blueHover flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-carbon-blue dark:focus:ring-offset-carbon-darkBg z-40" aria-label="Add new watch">
+        <i data-feather="plus"></i>
     </button>
 
     <!-- Add/Edit Watch Modal -->
     <div id="watch-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-carbon-surface w-full max-w-lg border-t-4 border-t-carbon-blue shadow-2xl relative flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-carbon-border flex justify-between items-center bg-white">
-                <h3 class="text-xl font-semibold text-carbon-text" id="modal-title">Add Timepiece</h3>
-                <button onclick="closeModal()" class="text-carbon-textSecondary hover:text-carbon-text focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <div class="bg-carbon-surface dark:bg-carbon-darkSurface w-full max-w-lg border-t-4 border-t-carbon-blue shadow-2xl relative flex flex-col max-h-[90vh] transition-colors duration-200">
+            <div class="p-6 border-b border-carbon-border dark:border-carbon-darkBorder flex justify-between items-center bg-carbon-surface dark:bg-carbon-darkSurface">
+                <h3 class="text-xl font-semibold" id="modal-title">Add Timepiece</h3>
+                <button onclick="closeModals()" class="text-carbon-textSecondary dark:text-carbon-darkTextSecondary hover:text-carbon-text dark:hover:text-carbon-darkText focus:outline-none">
+                    <i data-feather="x"></i>
                 </button>
             </div>
             
-            <form id="watch-form" class="p-6 overflow-y-auto hide-scroll flex-grow bg-white">
+            <form id="watch-form" class="p-6 overflow-y-auto hide-scroll flex-grow bg-carbon-surface dark:bg-carbon-darkSurface">
                 <input type="hidden" id="watch-id">
                 
                 <div class="mb-5">
-                    <label for="brand" class="block text-sm text-carbon-textSecondary mb-1">Brand</label>
-                    <input type="text" id="brand" required class="carbon-input w-full p-3 text-carbon-text" placeholder="e.g., Seiko">
+                    <label for="brand" class="block text-sm text-carbon-textSecondary dark:text-carbon-darkTextSecondary mb-1">Brand</label>
+                    <input type="text" id="brand" required class="carbon-input w-full p-3 bg-carbon-bg dark:bg-[#1f1f1f] text-carbon-text dark:text-carbon-darkText focus:bg-[#e8e8e8] dark:focus:bg-[#333333]" placeholder="e.g., Seiko">
                 </div>
                 
                 <div class="mb-5">
-                    <label for="model" class="block text-sm text-carbon-textSecondary mb-1">Model</label>
-                    <input type="text" id="model" required class="carbon-input w-full p-3 text-carbon-text" placeholder="e.g., SKX007">
+                    <label for="model" class="block text-sm text-carbon-textSecondary dark:text-carbon-darkTextSecondary mb-1">Model</label>
+                    <input type="text" id="model" required class="carbon-input w-full p-3 bg-carbon-bg dark:bg-[#1f1f1f] text-carbon-text dark:text-carbon-darkText focus:bg-[#e8e8e8] dark:focus:bg-[#333333]" placeholder="e.g., SKX007">
                 </div>
 
                 <div class="mb-5">
-                    <label for="purchaseDate" class="block text-sm text-carbon-textSecondary mb-1">Purchase Date</label>
-                    <input type="date" id="purchaseDate" required class="carbon-input w-full p-3 text-carbon-text">
+                    <label for="purchaseDate" class="block text-sm text-carbon-textSecondary dark:text-carbon-darkTextSecondary mb-1">Purchase Date</label>
+                    <input type="date" id="purchaseDate" required class="carbon-input w-full p-3 bg-carbon-bg dark:bg-[#1f1f1f] text-carbon-text dark:text-carbon-darkText focus:bg-[#e8e8e8] dark:focus:bg-[#333333] [color-scheme:light] dark:[color-scheme:dark]">
                 </div>
 
                 <div class="mb-5">
-                    <label for="notes" class="block text-sm text-carbon-textSecondary mb-1">Notes (Maintenance, straps, etc.)</label>
-                    <textarea id="notes" rows="4" class="carbon-input w-full p-3 text-carbon-text resize-none" placeholder="Service history, strap size 22mm..."></textarea>
+                    <label for="notes" class="block text-sm text-carbon-textSecondary dark:text-carbon-darkTextSecondary mb-1">Notes (Maintenance, straps)</label>
+                    <textarea id="notes" rows="4" class="carbon-input w-full p-3 resize-none bg-carbon-bg dark:bg-[#1f1f1f] text-carbon-text dark:text-carbon-darkText focus:bg-[#e8e8e8] dark:focus:bg-[#333333]" placeholder="Service history, strap size 22mm..."></textarea>
                 </div>
             </form>
 
-            <div class="p-6 bg-carbon-bg border-t border-carbon-border flex justify-between">
+            <div class="p-6 bg-carbon-bg dark:bg-[#1f1f1f] border-t border-carbon-border dark:border-carbon-darkBorder flex justify-between">
                 <button type="button" id="btn-delete" onclick="deleteWatch()" class="hidden text-carbon-danger hover:underline text-sm font-medium">Delete Watch</button>
                 <div class="flex gap-3 ml-auto">
-                    <button type="button" onclick="closeModal()" class="bg-transparent border border-carbon-dark text-carbon-dark px-4 py-3 text-sm font-semibold hover:bg-gray-200 transition-colors">Cancel</button>
+                    <button type="button" onclick="closeModals()" class="bg-transparent border border-carbon-text dark:border-carbon-darkText text-carbon-text dark:text-carbon-darkText px-4 py-3 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-carbon-darkBorder transition-colors">Cancel</button>
                     <button type="button" onclick="saveWatch()" class="bg-carbon-blue text-white px-4 py-3 text-sm font-semibold hover:bg-carbon-blueHover transition-colors">Save Timepiece</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-carbon-surface dark:bg-carbon-darkSurface w-full max-w-md border-t-4 border-t-carbon-blue shadow-2xl relative flex flex-col transition-colors duration-200">
+            <div class="p-6 border-b border-carbon-border dark:border-carbon-darkBorder flex justify-between items-center bg-carbon-surface dark:bg-carbon-darkSurface">
+                <h3 class="text-xl font-semibold flex items-center gap-2"><i data-feather="settings"></i> Settings</h3>
+                <button onclick="closeModals()" class="text-carbon-textSecondary dark:text-carbon-darkTextSecondary hover:text-carbon-text dark:hover:text-carbon-darkText focus:outline-none">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 bg-carbon-surface dark:bg-carbon-darkSurface">
+                <div class="mb-5">
+                    <label for="theme-select" class="block text-sm font-medium text-carbon-textSecondary dark:text-carbon-darkTextSecondary mb-2">App Theme</label>
+                    <select id="theme-select" onchange="changeTheme(this.value)" class="carbon-input w-full p-3 bg-carbon-bg dark:bg-[#1f1f1f] text-carbon-text dark:text-carbon-darkText focus:bg-[#e8e8e8] dark:focus:bg-[#333333]">
+                        <option value="system">System Default</option>
+                        <option value="light">Light Mode</option>
+                        <option value="dark">Dark Mode</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="p-6 bg-carbon-bg dark:bg-[#1f1f1f] border-t border-carbon-border dark:border-carbon-darkBorder flex justify-end">
+                <button type="button" onclick="closeModals()" class="bg-carbon-blue text-white px-4 py-3 text-sm font-semibold hover:bg-carbon-blueHover transition-colors">Done</button>
             </div>
         </div>
     </div>
